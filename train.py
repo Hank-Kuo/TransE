@@ -94,9 +94,9 @@ def main(_):
     
     # os setting
     path = FLAGS.dataset_path
-    train_path = os.path.join(path, "train.txt")
-    validation_path = os.path.join(path, "valid.txt")
-    test_path = os.path.join(path, "test.txt")
+    train_path = os.path.join(path, "train/train.txt")
+    validation_path = os.path.join(path, "valid/valid.txt")
+    test_path = os.path.join(path, "test/test.txt")
 
     entity2id, relation2id = data_loader.create_mappings(train_path)
 

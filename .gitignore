@@ -4,3 +4,4 @@ __pycache__
 checkpoint.tar
 runs
 venv
+/data/raw_data
