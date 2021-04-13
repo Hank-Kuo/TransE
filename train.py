@@ -198,7 +198,7 @@ def main(_):
     best_model.eval()
     scores = test(model=best_model, data_generator=test_generator, entities_count=len(entity2id), device=device,
                   summary_writer=summary_writer, epoch_id=1, metric_suffix="test")
-    print("Test scores: ", scores)
+    print("Test scores: \nhit%1: {} \nhit%3: {} \nhit%10: {} \nmrr: {}".format(scores[0], scores[1], scores[2], scores[3]))
 
 
 if __name__ == '__main__':
