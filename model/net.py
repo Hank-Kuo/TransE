@@ -6,7 +6,7 @@ import torch.nn as nn
 class Net(nn.Module):
 
     def __init__(self, entity_count, relation_count, device, norm=1, dim=100, margin=1.0):
-        super(TransE, self).__init__()
+        super(Net, self).__init__()
         self.entity_count = entity_count
         self.relation_count = relation_count
         self.device = device
