@@ -112,7 +112,7 @@ def main(_):
     test_set = data_loader.FB15KDataset(test_path, entity2id, relation2id)
     test_generator = torch_data.DataLoader(test_set, batch_size=FLAGS.validation_batch_size)
 
-    model = net.TransE(entity_count=len(entity2id), relation_count=len(relation2id), dim=vector_length,
+    model = net.Net(entity_count=len(entity2id), relation_count=len(relation2id), dim=vector_length,
                                     margin=margin,
                                     device=device, norm=norm)  # type: torch.nn.Module
     model = model.to(device)
