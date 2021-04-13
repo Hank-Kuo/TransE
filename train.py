@@ -3,7 +3,7 @@ from absl import app
 from absl import flags
 from typing import Tuple
 
-import data
+import model.data_loader as data_loader
 import metric
 import model.net as net
 import utils
@@ -95,7 +95,7 @@ def main(_):
     validation_path = os.path.join(path, "valid.txt")
     test_path = os.path.join(path, "test.txt")
 
-    entity2id, relation2id = data.create_mappings(train_path)
+    entity2id, relation2id = data_loader.create_mappings(train_path)
 
     batch_size = FLAGS.batch_size
     vector_length = FLAGS.vector_length
@@ -105,11 +105,11 @@ def main(_):
     epochs = FLAGS.epochs
     device = torch.device('cuda') if FLAGS.use_gpu else torch.device('cpu')
 
-    train_set = data.FB15KDataset(train_path, entity2id, relation2id)
+    train_set = data_loader.FB15KDataset(train_path, entity2id, relation2id)
     train_generator = torch_data.DataLoader(train_set, batch_size=batch_size)
-    validation_set = data.FB15KDataset(validation_path, entity2id, relation2id)
+    validation_set = data_loader.FB15KDataset(validation_path, entity2id, relation2id)
     validation_generator = torch_data.DataLoader(validation_set, batch_size=FLAGS.validation_batch_size)
-    test_set = data.FB15KDataset(test_path, entity2id, relation2id)
+    test_set = data_loader.FB15KDataset(test_path, entity2id, relation2id)
     test_generator = torch_data.DataLoader(test_set, batch_size=FLAGS.validation_batch_size)
 
     model = net.TransE(entity_count=len(entity2id), relation_count=len(relation2id), dim=vector_length,
