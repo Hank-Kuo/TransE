@@ -14,6 +14,7 @@ import torch.optim as optim
 from torch.utils import data as torch_data
 from torch.utils import tensorboard
 # from torchsummary import summary
+#
 
 FLAGS = flags.FLAGS
 flags.DEFINE_float("lr", default=0.01, help="Learning rate value.")
@@ -27,7 +28,7 @@ flags.DEFINE_integer("epochs", default=2000, help="Number of training epochs.")
 flags.DEFINE_string("dataset_path", default="./data", help="Path to dataset.")
 flags.DEFINE_bool("use_gpu", default=True, help="Flag enabling gpu usage.")
 flags.DEFINE_integer("validation_freq", default=10, help="Validate model every X epochs.")
-flags.DEFINE_string("checkpoint_path", default="", help="Path to model checkpoint (by default train from scratch).")
+flags.DEFINE_string("checkpoint_path", default="./experiments/checkpoint", help="Path to model checkpoint (by default train from scratch).")
 flags.DEFINE_string("tensorboard_log_dir", default="./experiments/log", help="Path for tensorboard log directory.")
 
 HITS_AT_1_SCORE = float
@@ -97,6 +98,8 @@ def main(_):
     train_path = os.path.join(path, "train/train.txt")
     validation_path = os.path.join(path, "valid/valid.txt")
     test_path = os.path.join(path, "test/test.txt")
+    path = FLAGS.checkpoint_path
+    checkpoint_path = os.path.join(path, "checkpoint.tar")
 
     entity2id, relation2id = data_loader.create_mappings(train_path)
 
@@ -127,10 +130,10 @@ def main(_):
     start_epoch_id = 1
     step = 0
     best_score = 0.0
-
+    '''
     if FLAGS.checkpoint_path:
         start_epoch_id, step, best_score = utils.load_checkpoint(FLAGS.checkpoint_path, model, optimizer)
-
+    '''
     print(model)
     
     # next(iter(data_loader))
@@ -188,17 +191,17 @@ def main(_):
                 score = hits_at_10
                 if score > best_score:
                     best_score = score
-                    utils.save_checkpoint(model, optimizer, epoch_id, step, best_score)
+                    utils.save_checkpoint(checkpoint_path, model, optimizer, epoch_id, step, best_score)
             t.set_postfix(loss = loss.mean().data.cpu().item())
             t.update()
 
     # Testing the best checkpoint on test dataset
-    utils.load_checkpoint("checkpoint.tar", model, optimizer)
+    utils.load_checkpoint(checkpoint_path, model, optimizer)
     best_model = model.to(device)
     best_model.eval()
     scores = test(model=best_model, data_generator=test_generator, entities_count=len(entity2id), device=device,
                   summary_writer=summary_writer, epoch_id=1, metric_suffix="test")
-    print("Test scores: \nhit%1: {} \nhit%3: {} \nhit%10: {} \nmrr: {}".format(scores[0], scores[1], scores[2], scores[3]))
+    print("Test scores: \n hit%1: {} \n hit%3: {} \nh it%10: {} \n mrr: {}".format(scores[0], scores[1], scores[2], scores[3]))
 
 
 if __name__ == '__main__':

@@ -29,11 +29,11 @@ def load_checkpoint(checkpoint_path: str, model: nn.Module, optim: optimizer.Opt
     return start_epoch_id, step, best_score
 
 
-def save_checkpoint(model: nn.Module, optim: optimizer.Optimizer, epoch_id: int, step: int, best_score: float):
+def save_checkpoint(checkpoint_path: str, model: nn.Module, optim: optimizer.Optimizer, epoch_id: int, step: int, best_score: float):
     torch.save({
         _MODEL_STATE_DICT: model.state_dict(),
         _OPTIMIZER_STATE_DICT: optim.state_dict(),
         _EPOCH: epoch_id,
         _STEP: step,
         _BEST_SCORE: best_score
-    }, "checkpoint.tar")
+    }, checkpoint_path)
