@@ -65,8 +65,6 @@ class Net(nn.Module):
         target = torch.tensor([-1], dtype=torch.long, device=self.device)
         return self.criterion(positive_distances, negative_distances, target)
 
-    def matrix
-
     def _distance(self, triplets):
         """Triplets should have shape Bx3 where dim 3 are head id, relation id, tail id."""
         assert triplets.size()[1] == 3

@@ -13,12 +13,6 @@ import torch.optim as optim
 from torch.utils import data as torch_data
 from torch.utils import tensorboard
 
-FLAGS = flags.FLAGS
-flags.DEFINE_integer("seed", default=1234, help="Seed value.")
-flags.DEFINE_string("dataset_path", default="./data", help="Path to dataset.")
-flags.DEFINE_string("checkpoint_path", default="./experiments/checkpoint", help="Path to model checkpoint (by default train from scratch).")
-flags.DEFINE_string("tensorboard_log_dir", default="./experiments/log", help="Path for tensorboard log directory.")
-
 HITS_AT_1_SCORE = float
 HITS_AT_3_SCORE = float
 HITS_AT_10_SCORE = float
@@ -57,10 +51,10 @@ def evaluate(model: torch.nn.Module, data_generator: torch_data.DataLoader, enti
         predictions = torch.cat((tails_predictions, heads_predictions), dim=0)
         ground_truth_entity_id = torch.cat((tail.reshape(-1, 1), head.reshape(-1, 1)))
 
-        hits_at_1 += net.metric.['hit_at_k'](predictions, ground_truth_entity_id, device=device, k=1)
-        hits_at_3 += net.metric.['hit_at_k'](predictions, ground_truth_entity_id, device=device, k=3)
-        hits_at_10 += net.metric.['hit_at_k'](predictions, ground_truth_entity_id, device=device, k=10)
-        mrr += net.metric.['mrr'](predictions, ground_truth_entity_id)
+        hits_at_1 += net.metric['hit_at_k'](predictions, ground_truth_entity_id, device=device, k=1)
+        hits_at_3 += net.metric['hit_at_k'](predictions, ground_truth_entity_id, device=device, k=3)
+        hits_at_10 += net.metric['hit_at_k'](predictions, ground_truth_entity_id, device=device, k=10)
+        mrr += net.metric['mrr'](predictions, ground_truth_entity_id)
         
         examples_count += predictions.size()[0] # dataset.size * 2 
 
@@ -75,6 +69,14 @@ def evaluate(model: torch.nn.Module, data_generator: torch_data.DataLoader, enti
     # summary_writer.add_scalar('Metrics/MRR/' + metric_suffix, mrr_score, global_step=epoch_id)
 
     return hits_at_1_score, hits_at_3_score, hits_at_10_score, mrr_score
+
+
+FLAGS = flags.FLAGS
+flags.DEFINE_integer("seed", default=1234, help="Seed value.")
+flags.DEFINE_string("dataset_path", default="./data", help="Path to dataset.")
+flags.DEFINE_string("checkpoint_path", default="./experiments/checkpoint", help="Path to model checkpoint (by default train from scratch).")
+flags.DEFINE_string("tensorboard_log_dir", default="./experiments/log", help="Path for tensorboard log directory.")
+flags.DEFINE_string("model_dir", default="./experiments/base_model", help="Path to model checkpoint (by default train from scratch).")
 
 
 def main(_):

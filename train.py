@@ -6,7 +6,7 @@ from tqdm import tqdm
 import model.net as net
 import model.data_loader as data_loader
 import utils
-import evaluate
+from evaluate import evaluate
 
 import torch
 import torch.optim as optim
@@ -110,9 +110,9 @@ def main(_):
                                     global_step=epoch_id)
 
             # validation
-            if epoch_id % FLAGS.validation_freq == 0:
+            if epoch_id % params.validation_freq == 0:
                 model.eval()
-                _, _, hits_at_10, _ = test(model=model, data_generator=validation_generator,
+                _, _, hits_at_10, _ = evaluate(model=model, data_generator=validation_generator,
                                         entities_count=len(entity2id),
                                         device=params.device, summary_writer=summary_writer,
                                         epoch_id=epoch_id, metric_suffix="val")
@@ -127,7 +127,7 @@ def main(_):
     utils.load_checkpoint(checkpoint_path, model, optimizer)
     best_model = model.to(params.device)
     best_model.eval()
-    scores = evaluate.evaluate(model=best_model, data_generator=test_generator, entities_count=len(entity2id), device=params.device,
+    scores = evaluate(model=best_model, data_generator=test_generator, entities_count=len(entity2id), device=params.device,
                   summary_writer=summary_writer, epoch_id=1, metric_suffix="test")
     print("Test scores: \n hit%1: {} \n hit%3: {} \nh it%10: {} \n mrr: {}".format(scores[0], scores[1], scores[2], scores[3]))
 
