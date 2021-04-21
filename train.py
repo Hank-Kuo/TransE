@@ -14,7 +14,6 @@ import torch.optim as optim
 from torch.utils import data as torch_data
 from torch.utils import tensorboard
 # from torchsummary import summary
-#
 
 FLAGS = flags.FLAGS
 flags.DEFINE_float("lr", default=0.01, help="Learning rate value.")
@@ -26,8 +25,8 @@ flags.DEFINE_float("margin", default=1.0, help="Margin value in margin-based ran
 flags.DEFINE_integer("norm", default=1, help="Norm used for calculating dissimilarity metric (usually 1 or 2).")
 flags.DEFINE_integer("epochs", default=2000, help="Number of training epochs.")
 flags.DEFINE_string("dataset_path", default="./data", help="Path to dataset.")
-flags.DEFINE_bool("use_gpu", default=True, help="Flag enabling gpu usage.")
 flags.DEFINE_integer("validation_freq", default=10, help="Validate model every X epochs.")
+flags.DEFINE_string("model_dir", default="./experiments/base_model", help="Path to model checkpoint (by default train from scratch).")
 flags.DEFINE_string("checkpoint_path", default="./experiments/checkpoint", help="Path to model checkpoint (by default train from scratch).")
 flags.DEFINE_string("tensorboard_log_dir", default="./experiments/log", help="Path for tensorboard log directory.")
 
@@ -98,8 +97,9 @@ def main(_):
     train_path = os.path.join(path, "train/train.txt")
     validation_path = os.path.join(path, "valid/valid.txt")
     test_path = os.path.join(path, "test/test.txt")
-    path = FLAGS.checkpoint_path
-    checkpoint_path = os.path.join(path, "checkpoint.tar")
+    params_path = os.path.join(FLAGS.model_dir, 'params.json')
+    checkpoint_path = os.path.join(FLAGS.checkpoint_path, "checkpoint.tar")
+    
 
     entity2id, relation2id = data_loader.create_mappings(train_path)
 
@@ -110,7 +110,9 @@ def main(_):
     norm = FLAGS.norm
     learning_rate = FLAGS.lr
     epochs = FLAGS.epochs
-    device = torch.device('cuda') if FLAGS.use_gpu else torch.device('cpu')
+    params = utils.Params(json_path)
+    print(params)
+    device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
 
     # dataset
     train_set = data_loader.FB15KDataset(train_path, entity2id, relation2id)

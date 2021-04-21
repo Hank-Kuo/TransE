@@ -12,16 +12,21 @@ import utils
 import torch
 import torch.optim as optim
 from torch.utils import data as torch_data
+from torch.utils import tensorboard
 
 FLAGS = flags.FLAGS
+flags.DEFINE_float("lr", default=0.01, help="Learning rate value.")
 flags.DEFINE_integer("seed", default=1234, help="Seed value.")
+flags.DEFINE_integer("batch_size", default=128, help="Maximum batch size.")
 flags.DEFINE_integer("validation_batch_size", default=64, help="Maximum batch size during model validation.")
 flags.DEFINE_integer("vector_length", default=50, help="Length of entity/relation vector.")
 flags.DEFINE_float("margin", default=1.0, help="Margin value in margin-based ranking loss.")
 flags.DEFINE_integer("norm", default=1, help="Norm used for calculating dissimilarity metric (usually 1 or 2).")
+flags.DEFINE_integer("epochs", default=2000, help="Number of training epochs.")
 flags.DEFINE_string("dataset_path", default="./data", help="Path to dataset.")
-flags.DEFINE_bool("use_gpu", default=True, help="Flag enabling gpu usage.")
+flags.DEFINE_integer("validation_freq", default=10, help="Validate model every X epochs.")
 flags.DEFINE_string("checkpoint_path", default="./experiments/checkpoint", help="Path to model checkpoint (by default train from scratch).")
+flags.DEFINE_string("tensorboard_log_dir", default="./experiments/log", help="Path for tensorboard log directory.")
 
 HITS_AT_1_SCORE = float
 HITS_AT_3_SCORE = float
@@ -40,6 +45,7 @@ def test(model: torch.nn.Module, data_generator: torch_data.DataLoader, entities
     mrr = 0.0
 
     entity_ids = torch.arange(end=entities_count, device=device).unsqueeze(0)
+    
     for head, relation, tail in data_generator:
         current_batch_size = head.size()[0]
 
@@ -64,17 +70,18 @@ def test(model: torch.nn.Module, data_generator: torch_data.DataLoader, entities
         hits_at_3 += metric.hit_at_k(predictions, ground_truth_entity_id, device=device, k=3)
         hits_at_10 += metric.hit_at_k(predictions, ground_truth_entity_id, device=device, k=10)
         mrr += metric.mrr(predictions, ground_truth_entity_id)
-
-        examples_count += predictions.size()[0]
+        
+        examples_count += predictions.size()[0] # dataset.size * 2 
 
     hits_at_1_score = hits_at_1 / examples_count * 100
     hits_at_3_score = hits_at_3 / examples_count * 100
     hits_at_10_score = hits_at_10 / examples_count * 100
-    mrr_score = mrr / examples_count * 100
-    summary_writer.add_scalar('Metrics/Hits_1/' + metric_suffix, hits_at_1_score, global_step=epoch_id)
-    summary_writer.add_scalar('Metrics/Hits_3/' + metric_suffix, hits_at_3_score, global_step=epoch_id)
-    summary_writer.add_scalar('Metrics/Hits_10/' + metric_suffix, hits_at_10_score, global_step=epoch_id)
-    summary_writer.add_scalar('Metrics/MRR/' + metric_suffix, mrr_score, global_step=epoch_id)
+    mrr_score = mrr / examples_count
+    
+    # summary_writer.add_scalar('Metrics/Hits_1/' + metric_suffix, hits_at_1_score, global_step=epoch_id)
+    # summary_writer.add_scalar('Metrics/Hits_3/' + metric_suffix, hits_at_3_score, global_step=epoch_id)
+    # summary_writer.add_scalar('Metrics/Hits_10/' + metric_suffix, hits_at_10_score, global_step=epoch_id)
+    # summary_writer.add_scalar('Metrics/MRR/' + metric_suffix, mrr_score, global_step=epoch_id)
 
     return hits_at_1_score, hits_at_3_score, hits_at_10_score, mrr_score
 
@@ -88,7 +95,6 @@ def main(_):
     # os setting
     path = FLAGS.dataset_path
     train_path = os.path.join(path, "train/train.txt")
-    validation_path = os.path.join(path, "valid/valid.txt")
     test_path = os.path.join(path, "test/test.txt")
     path = FLAGS.checkpoint_path
     checkpoint_path = os.path.join(path, "checkpoint.tar")
@@ -99,7 +105,8 @@ def main(_):
     vector_length = FLAGS.vector_length
     margin = FLAGS.margin
     norm = FLAGS.norm
-    device = torch.device('cuda') if FLAGS.use_gpu else torch.device('cpu')
+    learning_rate = FLAGS.lr
+    device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
 
     # dataset
     test_set = data_loader.FB15KDataset(test_path, entity2id, relation2id)
@@ -110,14 +117,15 @@ def main(_):
                                     margin=margin,
                                     device=device, norm=norm)
     optimizer = optim.SGD(model.parameters(), lr=learning_rate)
-
+    summary_writer = tensorboard.SummaryWriter(log_dir=FLAGS.tensorboard_log_dir)
+    
     # Testing the best checkpoint on test dataset
     utils.load_checkpoint(checkpoint_path, model, optimizer)
     best_model = model.to(device)
     best_model.eval()
     scores = test(model=best_model, data_generator=test_generator, entities_count=len(entity2id), device=device,
                   summary_writer=summary_writer, epoch_id=1, metric_suffix="test")
-    print("Test scores: \n hit%1: {} \n hit%3: {} \nh it%10: {} \n mrr: {}".format(scores[0], scores[1], scores[2], scores[3]))
+    print("Test scores: \n hit%1: {} \n hit%3: {} \nhit%10: {} \n mrr: {}".format(scores[0], scores[1], scores[2], scores[3]))
 
 
 if __name__ == '__main__':

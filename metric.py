@@ -28,4 +28,5 @@ def mrr(predictions: torch.Tensor, ground_truth_idx: torch.Tensor) -> float:
     assert predictions.size(0) == ground_truth_idx.size(0)
 
     indices = predictions.argsort()
-    return (1.0 / (indices == ground_truth_idx).nonzero()[:, 1].float().add(1.0)).sum().item()
+    return (indices == ground_truth_idx).nonzero()[:, 1].float().add(1.0)).sum().item()
+    # return (1.0 / (indices == ground_truth_idx).nonzero()[:, 1].float().add(1.0)).sum().item()
