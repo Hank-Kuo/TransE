@@ -4,7 +4,6 @@ from absl import flags
 from typing import Tuple
 from tqdm import tqdm
 
-import metric
 import model.net as net
 import model.data_loader as data_loader
 import utils
@@ -15,16 +14,8 @@ from torch.utils import data as torch_data
 from torch.utils import tensorboard
 
 FLAGS = flags.FLAGS
-flags.DEFINE_float("lr", default=0.01, help="Learning rate value.")
 flags.DEFINE_integer("seed", default=1234, help="Seed value.")
-flags.DEFINE_integer("batch_size", default=128, help="Maximum batch size.")
-flags.DEFINE_integer("validation_batch_size", default=64, help="Maximum batch size during model validation.")
-flags.DEFINE_integer("vector_length", default=50, help="Length of entity/relation vector.")
-flags.DEFINE_float("margin", default=1.0, help="Margin value in margin-based ranking loss.")
-flags.DEFINE_integer("norm", default=1, help="Norm used for calculating dissimilarity metric (usually 1 or 2).")
-flags.DEFINE_integer("epochs", default=2000, help="Number of training epochs.")
 flags.DEFINE_string("dataset_path", default="./data", help="Path to dataset.")
-flags.DEFINE_integer("validation_freq", default=10, help="Validate model every X epochs.")
 flags.DEFINE_string("checkpoint_path", default="./experiments/checkpoint", help="Path to model checkpoint (by default train from scratch).")
 flags.DEFINE_string("tensorboard_log_dir", default="./experiments/log", help="Path for tensorboard log directory.")
 
@@ -35,7 +26,7 @@ MRR_SCORE = float
 METRICS = Tuple[HITS_AT_1_SCORE, HITS_AT_3_SCORE, HITS_AT_10_SCORE, MRR_SCORE]
 
 
-def test(model: torch.nn.Module, data_generator: torch_data.DataLoader, entities_count: int,
+def evaluate(model: torch.nn.Module, data_generator: torch_data.DataLoader, entities_count: int,
          summary_writer: tensorboard.SummaryWriter, device: torch.device, epoch_id: int, metric_suffix: str,
          ) -> METRICS:
     examples_count = 0.0
@@ -66,10 +57,10 @@ def test(model: torch.nn.Module, data_generator: torch_data.DataLoader, entities
         predictions = torch.cat((tails_predictions, heads_predictions), dim=0)
         ground_truth_entity_id = torch.cat((tail.reshape(-1, 1), head.reshape(-1, 1)))
 
-        hits_at_1 += metric.hit_at_k(predictions, ground_truth_entity_id, device=device, k=1)
-        hits_at_3 += metric.hit_at_k(predictions, ground_truth_entity_id, device=device, k=3)
-        hits_at_10 += metric.hit_at_k(predictions, ground_truth_entity_id, device=device, k=10)
-        mrr += metric.mrr(predictions, ground_truth_entity_id)
+        hits_at_1 += net.metric.['hit_at_k'](predictions, ground_truth_entity_id, device=device, k=1)
+        hits_at_3 += net.metric.['hit_at_k'](predictions, ground_truth_entity_id, device=device, k=3)
+        hits_at_10 += net.metric.['hit_at_k'](predictions, ground_truth_entity_id, device=device, k=10)
+        mrr += net.metric.['mrr'](predictions, ground_truth_entity_id)
         
         examples_count += predictions.size()[0] # dataset.size * 2 
 
@@ -96,34 +87,31 @@ def main(_):
     path = FLAGS.dataset_path
     train_path = os.path.join(path, "train/train.txt")
     test_path = os.path.join(path, "test/test.txt")
-    path = FLAGS.checkpoint_path
-    checkpoint_path = os.path.join(path, "checkpoint.tar")
+    params_path = os.path.join(FLAGS.model_dir, 'params.json')
+    checkpoint_path = os.path.join(FLAGS.checkpoint_path, "checkpoint.tar")
 
     entity2id, relation2id = data_loader.create_mappings(train_path)
 
     # params
-    vector_length = FLAGS.vector_length
-    margin = FLAGS.margin
-    norm = FLAGS.norm
-    learning_rate = FLAGS.lr
-    device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
+    params = utils.Params(params_path)
+    params.device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
 
     # dataset
     test_set = data_loader.FB15KDataset(test_path, entity2id, relation2id)
-    test_generator = torch_data.DataLoader(test_set, batch_size=FLAGS.validation_batch_size)
+    test_generator = torch_data.DataLoader(test_set, batch_size=params.validation_batch_size)
 
     # model
-    model = net.Net(entity_count=len(entity2id), relation_count=len(relation2id), dim=vector_length,
-                                    margin=margin,
-                                    device=device, norm=norm)
-    optimizer = optim.SGD(model.parameters(), lr=learning_rate)
+    model = net.Net(entity_count=len(entity2id), relation_count=len(relation2id), dim=params.embedding_dim,
+                                    margin=params.margin,
+                                    device=params.device, norm=params.norm)
+    optimizer = optim.SGD(model.parameters(), lr=params.learning_rate)
     summary_writer = tensorboard.SummaryWriter(log_dir=FLAGS.tensorboard_log_dir)
     
     # Testing the best checkpoint on test dataset
     utils.load_checkpoint(checkpoint_path, model, optimizer)
-    best_model = model.to(device)
+    best_model = model.to(params.device)
     best_model.eval()
-    scores = test(model=best_model, data_generator=test_generator, entities_count=len(entity2id), device=device,
+    scores = evaluate(model=best_model, data_generator=test_generator, entities_count=len(entity2id), device=params.device,
                   summary_writer=summary_writer, epoch_id=1, metric_suffix="test")
     print("Test scores: \n hit%1: {} \n hit%3: {} \nhit%10: {} \n mrr: {}".format(scores[0], scores[1], scores[2], scores[3]))
 
