@@ -64,8 +64,8 @@ def main(_):
         start_epoch_id, step, best_score = utils.load_checkpoint(FLAGS.checkpoint_path, model, optimizer)
     '''
     print("Training Dataset: entity: {} relation: {} triples: {}".format(len(entity2id), len(relation2id), len(train_set)))
-    print("Validation Dataset: triples: {}".format(len(validation_set))
-    print("Test Dataset: triples: {}".format(len(test_set))
+    print("Validation Dataset: triples: {}".format(len(validation_set)))
+    print("Test Dataset: triples: {}".format(len(test_set)))
     print(model)
 
     # Train
