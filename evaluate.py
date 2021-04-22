@@ -71,15 +71,14 @@ def evaluate(model: torch.nn.Module, data_generator: torch_data.DataLoader, enti
     return hits_at_1_score, hits_at_3_score, hits_at_10_score, mrr_score
 
 
-FLAGS = flags.FLAGS
-flags.DEFINE_integer("seed", default=1234, help="Seed value.")
-flags.DEFINE_string("dataset_path", default="./data", help="Path to dataset.")
-flags.DEFINE_string("checkpoint_path", default="./experiments/checkpoint", help="Path to model checkpoint (by default train from scratch).")
-flags.DEFINE_string("tensorboard_log_dir", default="./experiments/log", help="Path for tensorboard log directory.")
-flags.DEFINE_string("model_dir", default="./experiments/base_model", help="Path to model checkpoint (by default train from scratch).")
-
-
 def main(_):
+    FLAGS = flags.FLAGS
+    flags.DEFINE_integer("seed", default=1234, help="Seed value.")
+    flags.DEFINE_string("dataset_path", default="./data", help="Path to dataset.")
+    flags.DEFINE_string("checkpoint_path", default="./experiments/checkpoint", help="Path to model checkpoint (by default train from scratch).")
+    flags.DEFINE_string("tensorboard_log_dir", default="./experiments/log", help="Path for tensorboard log directory.")
+    flags.DEFINE_string("model_dir", default="./experiments/base_model", help="Path to model checkpoint (by default train from scratch).")
+
     # torch setting
     torch.random.manual_seed(FLAGS.seed)
     torch.backends.cudnn.deterministic = True
