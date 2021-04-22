@@ -51,10 +51,10 @@ def evaluate(model: torch.nn.Module, data_generator: torch_data.DataLoader, enti
         predictions = torch.cat((tails_predictions, heads_predictions), dim=0)
         ground_truth_entity_id = torch.cat((tail.reshape(-1, 1), head.reshape(-1, 1)))
 
-        hits_at_1 += net.metric['hit_at_k'](predictions, ground_truth_entity_id, device=device, k=1)
-        hits_at_3 += net.metric['hit_at_k'](predictions, ground_truth_entity_id, device=device, k=3)
-        hits_at_10 += net.metric['hit_at_k'](predictions, ground_truth_entity_id, device=device, k=10)
-        mrr += net.metric['mrr'](predictions, ground_truth_entity_id)
+        hits_at_1 += net.metrics['hit_at_k'](predictions, ground_truth_entity_id, device=device, k=1)
+        hits_at_3 += net.metrics['hit_at_k'](predictions, ground_truth_entity_id, device=device, k=3)
+        hits_at_10 += net.metrics['hit_at_k'](predictions, ground_truth_entity_id, device=device, k=10)
+        mrr += net.metrics['mrr'](predictions, ground_truth_entity_id)
         
         examples_count += predictions.size()[0] # dataset.size * 2 
 
