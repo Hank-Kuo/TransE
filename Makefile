@@ -7,10 +7,11 @@ PWD=
 
 get-dataset:
 	wget -c -r -nd -nH -P $(D_DIR) --ftp-user=$(USER) --ftp-password=$(PWD) ftp://$(IP)/workspace/ftp/$(D_DIR)
-	mv ./$(D_DIR)/* ./data/
+	mkdir ./data/train/
 	mkdir ./data/train/
 	mkdir ./data/valid/
 	mkdir ./data/test/
+	mv ./$(D_DIR)/* ./data/
 	mv ./data/train.txt ./data/train/
 	mv ./data/valid.txt ./data/valid/
 	mv ./data/test.txt ./data/test/

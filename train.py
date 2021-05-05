@@ -18,8 +18,8 @@ FLAGS = flags.FLAGS
 flags.DEFINE_integer("seed", default=1234, help="Seed value.")
 flags.DEFINE_string("dataset_path", default="./data", help="Path to dataset.")
 flags.DEFINE_string("model_dir", default="./experiments/base_model", help="Path to model checkpoint (by default train from scratch).")
-flags.DEFINE_string("checkpoint_path", default="./experiments/checkpoint", help="Path to model checkpoint (by default train from scratch).")
-flags.DEFINE_string("tensorboard_log_dir", default="./experiments/log", help="Path for tensorboard log directory.")
+# flags.DEFINE_string("checkpoint_path", default="./experiments/checkpoint", help="Path to model checkpoint (by default train from scratch).")
+# flags.DEFINE_string("tensorboard_log_dir", default="./experiments/log", help="Path for tensorboard log directory.")
 
 
 def main(_):
@@ -34,9 +34,11 @@ def main(_):
     validation_path = os.path.join(path, "valid/valid.txt")
     test_path = os.path.join(path, "test/test.txt")
     params_path = os.path.join(FLAGS.model_dir, 'params.json')
-    checkpoint_path = os.path.join(FLAGS.checkpoint_path, "checkpoint.tar")
-    utils.check_dir(FLAGS.checkpoint_path))
-    utils.check_dir(FLAGS.tensorboard_log_dir)
+    checkpoint_dir = os.path.join(FLAGS.model_dir, 'checkpoint')
+    tensorboard_log_dir = os.path.join(FLAGS.model_dir, 'log')
+    utils.check_dir(tensorboard_log_dir)
+    # utils.check_dir(FLAGS.checkpoint_path)
+    
 
 
     entity2id, relation2id = data_loader.create_mappings(train_path)
@@ -59,7 +61,7 @@ def main(_):
                                     device=params.device, norm=params.norm)  # type: torch.nn.Module
     model = model.to(params.device)
     optimizer = optim.SGD(model.parameters(), lr=params.learning_rate)
-    summary_writer = tensorboard.SummaryWriter(log_dir=FLAGS.tensorboard_log_dir)
+    summary_writer = tensorboard.SummaryWriter(log_dir=tensorboard_log_dir)
     start_epoch_id = 1
     step = 0
     best_score = 0.0
@@ -122,15 +124,15 @@ def main(_):
                                         device=params.device, summary_writer=summary_writer,
                                         epoch_id=epoch_id, metric_suffix="val")
                 score = hits_at_10
-                print("validation: {}".format(hits_at_10))
+                # print("validation: {}".format(hits_at_10))
                 if score > best_score:
                     best_score = score
-                    utils.save_checkpoint(checkpoint_path, model, optimizer, epoch_id, step, best_score)
+                    utils.save_checkpoint(checkpoint_dir, model, optimizer, epoch_id, step, best_score)
             t.set_postfix(loss = loss_impacting_samples_count / samples_count * 100)
             t.update()
 
     # Testing the best checkpoint on test dataset
-    utils.load_checkpoint(checkpoint_path, model, optimizer)
+    utils.load_checkpoint(checkpoint_dir, model, optimizer)
     best_model = model.to(params.device)
     best_model.eval()
     scores = evaluate(model=best_model, data_generator=test_generator, entities_count=len(entity2id), device=params.device,

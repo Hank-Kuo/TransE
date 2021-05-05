@@ -44,13 +44,42 @@ class Params():
         """Gives dict-like access to Params instance by `params.dict['learning_rate']"""
         return self.__dict__
 
+
+def set_logger(log_path):
+    """Set the logger to log info in terminal and file `log_path`.
+
+    In general, it is useful to have a logger so that every output to the terminal is saved
+    in a permanent file. Here we save it to `model_dir/train.log`.
+
+    Example:
+    ```
+    logging.info("Starting training...")
+    ```
+
+    Args:
+        log_path: (string) where to log
+    """
+    logger = logging.getLogger()
+    logger.setLevel(logging.INFO)
+
+    if not logger.handlers:
+        # Logging to a file
+        file_handler = logging.FileHandler(log_path)
+        file_handler.setFormatter(logging.Formatter('%(asctime)s:%(levelname)s: %(message)s'))
+        logger.addHandler(file_handler)
+
+        # Logging to console
+        stream_handler = logging.StreamHandler()
+        stream_handler.setFormatter(logging.Formatter('%(message)s'))
+        logger.addHandler(stream_handler)
+
 def check_dir(path:str):
     isdir = os.path.isdir(path) 
     if not isdir:
         os.mkdir(path)
 
 
-def load_checkpoint(checkpoint_path: str, model: nn.Module, optim: optimizer.Optimizer) -> Tuple[int, int, float]:
+def load_checkpoint(checkpoint_dir: str, model: nn.Module, optim: optimizer.Optimizer) -> Tuple[int, int, float]:
     """Loads training checkpoint.
 
     :param checkpoint_path: path to checkpoint
@@ -58,6 +87,7 @@ def load_checkpoint(checkpoint_path: str, model: nn.Module, optim: optimizer.Opt
     :param optim: optimizer to  update state
     :return tuple of starting epoch id, starting step id, best checkpoint score
     """
+    checkpoint_path = os.path.join(checkpoint_dir, 'checkpoint.tar') 
     checkpoint = torch.load(checkpoint_path)
     model.load_state_dict(checkpoint[_MODEL_STATE_DICT])
     optim.load_state_dict(checkpoint[_OPTIMIZER_STATE_DICT])
@@ -67,7 +97,12 @@ def load_checkpoint(checkpoint_path: str, model: nn.Module, optim: optimizer.Opt
     return start_epoch_id, step, best_score
 
 
-def save_checkpoint(checkpoint_path: str, model: nn.Module, optim: optimizer.Optimizer, epoch_id: int, step: int, best_score: float):
+def save_checkpoint(checkpoint_dir: str, model: nn.Module, optim: optimizer.Optimizer, epoch_id: int, step: int, best_score: float):
+    if not os.path.exists(checkpoint_dir):
+        os.mkdir(checkpoint_dir)
+
+    checkpoint_path = os.path.join(checkpoint_dir, 'checkpoint.tar') 
+    
     torch.save({
         _MODEL_STATE_DICT: model.state_dict(),
         _OPTIMIZER_STATE_DICT: optim.state_dict(),

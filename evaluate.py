@@ -63,10 +63,10 @@ def evaluate(model: torch.nn.Module, data_generator: torch_data.DataLoader, enti
     hits_at_10_score = hits_at_10 / examples_count * 100
     mrr_score = mrr / examples_count
     
-    # summary_writer.add_scalar('Metrics/Hits_1/' + metric_suffix, hits_at_1_score, global_step=epoch_id)
-    # summary_writer.add_scalar('Metrics/Hits_3/' + metric_suffix, hits_at_3_score, global_step=epoch_id)
-    # summary_writer.add_scalar('Metrics/Hits_10/' + metric_suffix, hits_at_10_score, global_step=epoch_id)
-    # summary_writer.add_scalar('Metrics/MRR/' + metric_suffix, mrr_score, global_step=epoch_id)
+    summary_writer.add_scalar('Metrics/Hits_1/' + metric_suffix, hits_at_1_score, global_step=epoch_id)
+    summary_writer.add_scalar('Metrics/Hits_3/' + metric_suffix, hits_at_3_score, global_step=epoch_id)
+    summary_writer.add_scalar('Metrics/Hits_10/' + metric_suffix, hits_at_10_score, global_step=epoch_id)
+    summary_writer.add_scalar('Metrics/MRR/' + metric_suffix, mrr_score, global_step=epoch_id)
 
     return hits_at_1_score, hits_at_3_score, hits_at_10_score, mrr_score
 
@@ -75,9 +75,10 @@ def main(_):
     FLAGS = flags.FLAGS
     flags.DEFINE_integer("seed", default=1234, help="Seed value.")
     flags.DEFINE_string("dataset_path", default="./data", help="Path to dataset.")
-    flags.DEFINE_string("checkpoint_path", default="./experiments/checkpoint", help="Path to model checkpoint (by default train from scratch).")
-    flags.DEFINE_string("tensorboard_log_dir", default="./experiments/log", help="Path for tensorboard log directory.")
     flags.DEFINE_string("model_dir", default="./experiments/base_model", help="Path to model checkpoint (by default train from scratch).")
+    #flags.DEFINE_string("checkpoint_path", default="./experiments/checkpoint", help="Path to model checkpoint (by default train from scratch).")
+    # flags.DEFINE_string("tensorboard_log_dir", default="./experiments/log", help="Path for tensorboard log directory.")
+    
 
     # torch setting
     torch.random.manual_seed(FLAGS.seed)
@@ -89,7 +90,9 @@ def main(_):
     train_path = os.path.join(path, "train/train.txt")
     test_path = os.path.join(path, "test/test.txt")
     params_path = os.path.join(FLAGS.model_dir, 'params.json')
-    checkpoint_path = os.path.join(FLAGS.checkpoint_path, "checkpoint.tar")
+    # checkpoint_path = os.path.join(FLAGS.checkpoint_path, "checkpoint.tar")
+    checkpoint_dir = os.path.join(FLAGS.model_dir, 'checkpoint')
+    tensorboard_log_dir = os.path.join(FLAGS.model_dir, 'log')
 
     entity2id, relation2id = data_loader.create_mappings(train_path)
 
@@ -106,10 +109,10 @@ def main(_):
                                     margin=params.margin,
                                     device=params.device, norm=params.norm)
     optimizer = optim.SGD(model.parameters(), lr=params.learning_rate)
-    summary_writer = tensorboard.SummaryWriter(log_dir=FLAGS.tensorboard_log_dir)
+    summary_writer = tensorboard.SummaryWriter(log_dir=tensorboard_log_dir)
     
     # Testing the best checkpoint on test dataset
-    utils.load_checkpoint(checkpoint_path, model, optimizer)
+    utils.load_checkpoint(checkpoint_dir, model, optimizer)
     best_model = model.to(params.device)
     best_model.eval()
     scores = evaluate(model=best_model, data_generator=test_generator, entities_count=len(entity2id), device=params.device,
