@@ -35,8 +35,8 @@ def main(_):
     test_path = os.path.join(path, "test/test.txt")
     params_path = os.path.join(FLAGS.model_dir, 'params.json')
     checkpoint_path = os.path.join(FLAGS.checkpoint_path, "checkpoint.tar")
-    utils.check_dir(os.path.join(path, FLAGS.checkpoint_path))
-    utils.check_dir(os.path.join(path, FLAGS.tensorboard_log_dir))
+    utils.check_dir(FLAGS.checkpoint_path))
+    utils.check_dir(FLAGS.tensorboard_log_dir)
 
 
     entity2id, relation2id = data_loader.create_mappings(train_path)
@@ -74,7 +74,6 @@ def main(_):
 
     # Train
     for epoch_id in range(start_epoch_id, params.epochs + 1):
-        # next(iter(data_loader))
         print("Epoch {}/{}".format(epoch_id, params.epochs))
         
         loss_impacting_samples_count = 0
@@ -127,7 +126,7 @@ def main(_):
                 if score > best_score:
                     best_score = score
                     utils.save_checkpoint(checkpoint_path, model, optimizer, epoch_id, step, best_score)
-            t.set_postfix(loss = loss_impacting_samples_count)
+            t.set_postfix(loss = loss_impacting_samples_count / samples_count * 100)
             t.update()
 
     # Testing the best checkpoint on test dataset
