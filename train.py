@@ -21,6 +21,7 @@ flags.DEFINE_string("model_dir", default="./experiments/base_model", help="Path 
 flags.DEFINE_string("checkpoint_path", default="./experiments/checkpoint", help="Path to model checkpoint (by default train from scratch).")
 flags.DEFINE_string("tensorboard_log_dir", default="./experiments/log", help="Path for tensorboard log directory.")
 
+
 def main(_):
     # torch setting
     torch.random.manual_seed(FLAGS.seed)
@@ -35,7 +36,7 @@ def main(_):
     params_path = os.path.join(FLAGS.model_dir, 'params.json')
     checkpoint_path = os.path.join(FLAGS.checkpoint_path, "checkpoint.tar")
     utils.check_dir(os.path.join(path, FLAGS.checkpoint_path))
-    utils.check_dir(os.path.join(path, FLAGS.tensorboard_log_dir) )
+    utils.check_dir(os.path.join(path, FLAGS.tensorboard_log_dir))
 
 
     entity2id, relation2id = data_loader.create_mappings(train_path)
