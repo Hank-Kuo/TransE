@@ -1,6 +1,5 @@
 import os
-from absl import app
-from absl import flags
+import argparse
 from typing import Tuple
 from tqdm import tqdm
 
@@ -18,6 +17,11 @@ HITS_AT_3_SCORE = float
 HITS_AT_10_SCORE = float
 MRR_SCORE = float
 METRICS = Tuple[HITS_AT_1_SCORE, HITS_AT_3_SCORE, HITS_AT_10_SCORE, MRR_SCORE]
+
+parser = argparse.ArgumentParser()
+parser.add_argument("--seed", default=1234, help="Seed value.")
+parser.add_argument("--dataset_path", default="./data", help="Path to dataset.")
+parser.add_argument("--model_dir", default="./experiments/base_model", help="Path to model checkpoint (by default train from scratch).")
 
 
 def evaluate(model: torch.nn.Module, data_generator: torch_data.DataLoader, entities_count: int,
@@ -71,28 +75,22 @@ def evaluate(model: torch.nn.Module, data_generator: torch_data.DataLoader, enti
     return hits_at_1_score, hits_at_3_score, hits_at_10_score, mrr_score
 
 
-def main(_):
-    FLAGS = flags.FLAGS
-    flags.DEFINE_integer("seed", default=1234, help="Seed value.")
-    flags.DEFINE_string("dataset_path", default="./data", help="Path to dataset.")
-    flags.DEFINE_string("model_dir", default="./experiments/base_model", help="Path to model checkpoint (by default train from scratch).")
-    #flags.DEFINE_string("checkpoint_path", default="./experiments/checkpoint", help="Path to model checkpoint (by default train from scratch).")
-    # flags.DEFINE_string("tensorboard_log_dir", default="./experiments/log", help="Path for tensorboard log directory.")
-    
+def main():
+    args = parser.parse_args()    
 
     # torch setting
-    torch.random.manual_seed(FLAGS.seed)
+    torch.random.manual_seed(args.seed)
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = False
     
     # os setting
-    path = FLAGS.dataset_path
+    path = args.dataset_path
     train_path = os.path.join(path, "train/train.txt")
     test_path = os.path.join(path, "test/test.txt")
-    params_path = os.path.join(FLAGS.model_dir, 'params.json')
+    params_path = os.path.join(args.model_dir, 'params.json')
     # checkpoint_path = os.path.join(FLAGS.checkpoint_path, "checkpoint.tar")
-    checkpoint_dir = os.path.join(FLAGS.model_dir, 'checkpoint')
-    tensorboard_log_dir = os.path.join(FLAGS.model_dir, 'log')
+    checkpoint_dir = os.path.join(args.model_dir, 'checkpoint')
+    tensorboard_log_dir = os.path.join(args.model_dir, 'log')
 
     entity2id, relation2id = data_loader.create_mappings(train_path)
 
@@ -121,4 +119,4 @@ def main(_):
 
 
 if __name__ == '__main__':
-    app.run(main)
+    main()

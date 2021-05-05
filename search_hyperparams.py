@@ -1,5 +1,4 @@
 """Peform hyperparemeters search"""
-
 import argparse
 import os
 from subprocess import check_call
@@ -9,13 +8,15 @@ import utils
 
 
 PYTHON = sys.executable
-flags.DEFINE_string("model_dir", default="./experiments/base_model", help="Path to model checkpoint (by default train from scratch).")
-flags.DEFINE_string("params_dir", default="./experiments/search_params", help="Path to model checkpoint (by default train from scratch).")
+parser = argparse.ArgumentParser()
+parser.add_argument('--model_dir', default='./experiments/base_model',
+                    help='Directory containing params.json')
+parser.add_argument('--params_dir', default='./experiments/search_params', help="Directory containing the dataset")
+
 
 def launch_training_job(parent_dir, job_name, params):
-    # Create a new folder in parent_dir with unique_name "job_name"
     model_dir = os.path.join(parent_dir, job_name)
-     if not os.path.exists(model_dir):
+    if not os.path.exists(model_dir):
         os.makedirs(model_dir)
 
     # Write parameters in json file
@@ -28,9 +29,9 @@ def launch_training_job(parent_dir, job_name, params):
 
 
 if __name__ == "__main__":
-    path = FLAGS.dataset_path
-    utils.check_dir(FLAGS.params_dir)
-    params_path = os.path.join(FLAGS.model_dir, 'params.json')
+    args = parser.parse_args()
+    utils.check_dir(args.params_dir)
+    params_path = os.path.join(args.model_dir, 'params.json')
     params = utils.Params(params_path)
     
     # Perform hypersearch over one parameter
@@ -42,4 +43,4 @@ if __name__ == "__main__":
 
         # Launch job (name has to be unique)
         job_name = "learning_rate_{}".format(learning_rate)
-        launch_training_job(FLAGS.params_dir, job_name, params)
+        launch_training_job(args.params_dir, job_name, params)

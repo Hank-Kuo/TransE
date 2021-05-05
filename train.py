@@ -1,6 +1,5 @@
 import os
-from absl import app
-from absl import flags
+import argparse
 from tqdm import tqdm
 
 import model.net as net
@@ -14,30 +13,29 @@ from torch.utils import data as torch_data
 from torch.utils import tensorboard
 # from torchsummary import summary
 
-FLAGS = flags.FLAGS
-flags.DEFINE_integer("seed", default=1234, help="Seed value.")
-flags.DEFINE_string("dataset_path", default="./data", help="Path to dataset.")
-flags.DEFINE_string("model_dir", default="./experiments/base_model", help="Path to model checkpoint (by default train from scratch).")
-# flags.DEFINE_string("checkpoint_path", default="./experiments/checkpoint", help="Path to model checkpoint (by default train from scratch).")
-# flags.DEFINE_string("tensorboard_log_dir", default="./experiments/log", help="Path for tensorboard log directory.")
+parser = argparse.ArgumentParser()
+parser.add_argument("--seed", default=1234, help="Seed value.")
+parser.add_argument("--dataset_path", default="./data", help="Path to dataset.")
+parser.add_argument("--model_dir", default="./experiments/base_model", help="Path to model checkpoint (by default train from scratch).")
 
 
-def main(_):
+def main():
+    args = parser.parse_args()
+
     # torch setting
-    torch.random.manual_seed(FLAGS.seed)
+    torch.random.manual_seed(args.seed)
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = False
     
     # os setting
-    path = FLAGS.dataset_path
+    path = args.dataset_path
     train_path = os.path.join(path, "train/train.txt")
     validation_path = os.path.join(path, "valid/valid.txt")
     test_path = os.path.join(path, "test/test.txt")
-    params_path = os.path.join(FLAGS.model_dir, 'params.json')
-    checkpoint_dir = os.path.join(FLAGS.model_dir, 'checkpoint')
-    tensorboard_log_dir = os.path.join(FLAGS.model_dir, 'log')
+    params_path = os.path.join(args.model_dir, 'params.json')
+    checkpoint_dir = os.path.join(args.model_dir, 'checkpoint')
+    tensorboard_log_dir = os.path.join(args.model_dir, 'log')
     utils.check_dir(tensorboard_log_dir)
-    # utils.check_dir(FLAGS.checkpoint_path)
     
 
 
@@ -65,14 +63,16 @@ def main(_):
     start_epoch_id = 1
     step = 0
     best_score = 0.0
-    '''
-    if FLAGS.checkpoint_path:
-        start_epoch_id, step, best_score = utils.load_checkpoint(FLAGS.checkpoint_path, model, optimizer)
-    '''
+
     print("Training Dataset: entity: {} relation: {} triples: {}".format(len(entity2id), len(relation2id), len(train_set)))
     print("Validation Dataset: triples: {}".format(len(validation_set)))
     print("Test Dataset: triples: {}".format(len(test_set)))
     print(model)
+
+    '''
+    if FLAGS.checkpoint_path:
+        start_epoch_id, step, best_score = utils.load_checkpoint(FLAGS.checkpoint_path, model, optimizer)
+    '''
 
     # Train
     for epoch_id in range(start_epoch_id, params.epochs + 1):
@@ -113,7 +113,7 @@ def main(_):
                 optimizer.step()
                 step += 1
 
-            summary_writer.add_scalar('Metrics/loss_impacting_samples', loss_impacting_samples_count / samples_count * 100,
+            summary_writer.add_scalar('Metrics/batch_loss', loss_impacting_samples_count / samples_count * 100,
                                     global_step=epoch_id)
 
             # validation
@@ -124,7 +124,6 @@ def main(_):
                                         device=params.device, summary_writer=summary_writer,
                                         epoch_id=epoch_id, metric_suffix="val")
                 score = hits_at_10
-                # print("validation: {}".format(hits_at_10))
                 if score > best_score:
                     best_score = score
                     utils.save_checkpoint(checkpoint_dir, model, optimizer, epoch_id, step, best_score)
@@ -141,4 +140,4 @@ def main(_):
 
 
 if __name__ == '__main__':
-    app.run(main)
+    main()

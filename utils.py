@@ -87,6 +87,8 @@ def load_checkpoint(checkpoint_dir: str, model: nn.Module, optim: optimizer.Opti
     :param optim: optimizer to  update state
     :return tuple of starting epoch id, starting step id, best checkpoint score
     """
+    if not os.path.exists(checkpoint_dir):
+        raise ("File doesn't exist {}".format(checkpoint_dir))
     checkpoint_path = os.path.join(checkpoint_dir, 'checkpoint.tar') 
     checkpoint = torch.load(checkpoint_path)
     model.load_state_dict(checkpoint[_MODEL_STATE_DICT])

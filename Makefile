@@ -7,10 +7,10 @@ PWD=
 
 get-dataset:
 	wget -c -r -nd -nH -P $(D_DIR) --ftp-user=$(USER) --ftp-password=$(PWD) ftp://$(IP)/workspace/ftp/$(D_DIR)
-	mkdir ./data/train/
-	mkdir ./data/train/
-	mkdir ./data/valid/
-	mkdir ./data/test/
+	mkdir -p ./data/
+	mkdir -p ./data/train/
+	mkdir -p ./data/valid/
+	mkdir -p ./data/test/
 	mv ./$(D_DIR)/* ./data/
 	mv ./data/train.txt ./data/train/
 	mv ./data/valid.txt ./data/valid/
@@ -24,8 +24,8 @@ evalution:
 	python3 evalution.py
 
 upload:
-	curl -T $(O) --ftp-create-dirs -u $(USER):$(PWD) ftp://$(IP)/workspace/ftp/$(O_DIR)/preprocess/$(O)
+	curl -T $(O) --ftp-create-dirs -u $(USER):$(PWD) ftp://$(IP)/workspace/ftp/$(O_DIR)
 
 clean:
-	rm -f ./checkpoint/*
-	rm -f ./log/*
+	rm -f ./expierments/base_model/checkpoint/*
+	rm -f ./expierments/base_model/log/*
