@@ -34,6 +34,9 @@ def main(_):
     test_path = os.path.join(path, "test/test.txt")
     params_path = os.path.join(FLAGS.model_dir, 'params.json')
     checkpoint_path = os.path.join(FLAGS.checkpoint_path, "checkpoint.tar")
+    utils.check_dir(os.path.join(path, FLAGS.checkpoint_path))
+    utils.check_dir(os.path.join(path, FLAGS.tensorboard_log_dir) )
+
 
     entity2id, relation2id = data_loader.create_mappings(train_path)
 
@@ -75,7 +78,6 @@ def main(_):
         
         loss_impacting_samples_count = 0
         samples_count = 0
-        loss = 0
         model.train()
 
         with tqdm(total=len(train_generator)) as t:
@@ -120,10 +122,11 @@ def main(_):
                                         device=params.device, summary_writer=summary_writer,
                                         epoch_id=epoch_id, metric_suffix="val")
                 score = hits_at_10
+                print("validation: {}".format(hits_at_10))
                 if score > best_score:
                     best_score = score
                     utils.save_checkpoint(checkpoint_path, model, optimizer, epoch_id, step, best_score)
-            t.set_postfix(loss = loss.mean().data.cpu().item())
+            t.set_postfix(loss = loss_impacting_samples_count)
             t.update()
 
     # Testing the best checkpoint on test dataset

@@ -1,5 +1,6 @@
 import logging
 import json 
+import os
 
 import torch
 from torch import nn
@@ -42,6 +43,12 @@ class Params():
     def dict(self):
         """Gives dict-like access to Params instance by `params.dict['learning_rate']"""
         return self.__dict__
+
+def check_dir(path:str):
+    isdir = os.path.isdir(path) 
+    if not isdir:
+        os.mkdir(path)
+
 
 def load_checkpoint(checkpoint_path: str, model: nn.Module, optim: optimizer.Optimizer) -> Tuple[int, int, float]:
     """Loads training checkpoint.
