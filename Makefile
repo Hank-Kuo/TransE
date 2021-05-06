@@ -20,8 +20,8 @@ get-dataset:
 train:
 	python3 train.py
 
-evalution:
-	python3 evalution.py
+evaluate:
+	python3 evaluate.py
 
 upload:
 	curl -T $(O) --ftp-create-dirs -u $(USER):$(PWD) ftp://$(IP)/workspace/ftp/$(O_DIR)
