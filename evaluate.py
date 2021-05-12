@@ -38,15 +38,15 @@ def evaluate(model: torch.nn.Module, data_generator: torch_data.DataLoader, enti
     for head, relation, tail in data_generator:
         current_batch_size = head.size()[0]
 
-        head, relation, tail = head.to(device), relation.to(device), tail.to(device)
-        all_entities = entity_ids.repeat(current_batch_size, 1)
-        heads = head.reshape(-1, 1).repeat(1, all_entities.size()[1])
+        head, relation, tail = head.to(device), relation.to(device), tail.to(device) 
+        all_entities = entity_ids.repeat(current_batch_size, 1) # 0 ~ 14951, batch x 14951
+        heads = head.reshape(-1, 1).repeat(1, all_entities.size()[1]) # batch x 14951
         relations = relation.reshape(-1, 1).repeat(1, all_entities.size()[1])
         tails = tail.reshape(-1, 1).repeat(1, all_entities.size()[1])
 
         # Check all possible tails
-        triplets = torch.stack((heads, relations, all_entities), dim=2).reshape(-1, 3)
-        tails_predictions = model.predict(triplets).reshape(current_batch_size, -1)
+        triplets = torch.stack((heads, relations, all_entities), dim=2).reshape(-1, 3) # # batch x 14951 x 3 -> 478432, 3
+        tails_predictions = model.predict(triplets).reshape(current_batch_size, -1)  # 478432(flatten) -> 32, 14951
         # Check all possible heads
         triplets = torch.stack((all_entities, relations, tails), dim=2).reshape(-1, 3)
         heads_predictions = model.predict(triplets).reshape(current_batch_size, -1)

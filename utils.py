@@ -25,9 +25,13 @@ class Params():
     """
 
     def __init__(self, json_path):
-        with open(json_path) as f:
-            params = json.load(f)
-            self.__dict__.update(params)
+        if os.path.exists(json_path):
+            with open(json_path) as f:
+                params = json.load(f)
+                self.__dict__.update(params)
+        else:
+            with open(json_path, 'w') as f:
+                print('create json file')
 
     def save(self, json_path):
         with open(json_path, 'w') as f:
@@ -43,6 +47,7 @@ class Params():
     def dict(self):
         """Gives dict-like access to Params instance by `params.dict['learning_rate']"""
         return self.__dict__
+
 
 
 def set_logger(log_path):

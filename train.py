@@ -37,8 +37,6 @@ def main():
     tensorboard_log_dir = os.path.join(args.model_dir, 'log')
     utils.check_dir(tensorboard_log_dir)
     
-
-
     entity2id, relation2id = data_loader.create_mappings(train_path)
 
     # params
@@ -68,11 +66,6 @@ def main():
     print("Validation Dataset: triples: {}".format(len(validation_set)))
     print("Test Dataset: triples: {}".format(len(test_set)))
     print(model)
-
-    '''
-    if FLAGS.checkpoint_path:
-        start_epoch_id, step, best_score = utils.load_checkpoint(FLAGS.checkpoint_path, model, optimizer)
-    '''
 
     # Train
     for epoch_id in range(start_epoch_id, params.epochs + 1):
@@ -112,6 +105,9 @@ def main():
 
                 optimizer.step()
                 step += 1
+                
+                t.set_postfix(loss = loss_impacting_samples_count / samples_count * 100)
+                t.update()
 
             summary_writer.add_scalar('Metrics/batch_loss', loss_impacting_samples_count / samples_count * 100,
                                     global_step=epoch_id)
@@ -127,8 +123,7 @@ def main():
                 if score > best_score:
                     best_score = score
                     utils.save_checkpoint(checkpoint_dir, model, optimizer, epoch_id, step, best_score)
-            t.set_postfix(loss = loss_impacting_samples_count / samples_count * 100)
-            t.update()
+            
 
     # Testing the best checkpoint on test dataset
     utils.load_checkpoint(checkpoint_dir, model, optimizer)
@@ -137,6 +132,17 @@ def main():
     scores = evaluate(model=best_model, data_generator=test_generator, entities_count=len(entity2id), device=params.device,
                   summary_writer=summary_writer, epoch_id=1, metric_suffix="test")
     print("Test scores: \n hit%1: {} \n hit%3: {} \nh it%10: {} \n mrr: {}".format(scores[0], scores[1], scores[2], scores[3]))
+
+    eval_path = os.path.join(args.model_dir, 'eval.json')
+    evals_params = utils.Params(eval_path)
+    evals_params.hit_1 = scores[0]
+    evals_params.hit_3 = scores[1]
+    evals_params.hit_10 = scores[2]
+    evals_params.mrr = scores[3]
+    evals_params.best_score = best_score
+    evals_params.save(eval_path)
+
+
 
 
 if __name__ == '__main__':
