@@ -51,7 +51,8 @@ class Net(nn.Module):
         """
         # -1 to avoid nan for OOV vector
         # entity需要在每次更新前进行归一化，这是通过人为增加embedding的norm来防止Loss在训练过程中极小化
-        self.entities_emb.weight.data[:-1, :].div_(self.entities_emb.weight.data[:-1, :].norm(p=2, dim=1, keepdim=True))
+        self.head_emb.weight.data[:-1, :].div_(self.head_emb.weight.data[:-1, :].norm(p=2, dim=1, keepdim=True))
+        self.tail_emb.weight.data[:-1, :].div_(self.tail_emb.weight.data[:-1, :].norm(p=2, dim=1, keepdim=True))
 
         assert positive_triplets.size()[1] == 3
         positive_distances = self._distance(positive_triplets)
