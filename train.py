@@ -64,7 +64,7 @@ def main():
 
     print("Training Dataset: entity: {} relation: {} triples: {}".format(len(entity2id), len(relation2id), len(train_set)))
     print("Validation Dataset: triples: {}".format(len(validation_set)))
-    print("Test Dataset: triples: {}".format(len(test_set)))
+    # print("Test Dataset: triples: {}".format(len(test_set)))
     print(model)
 
     # Train
@@ -124,7 +124,7 @@ def main():
                     best_score = score
                     utils.save_checkpoint(checkpoint_dir, model, optimizer, epoch_id, step, best_score)
             
-
+    '''
     # Testing the best checkpoint on test dataset
     utils.load_checkpoint(checkpoint_dir, model, optimizer)
     best_model = model.to(params.device)
@@ -141,6 +141,7 @@ def main():
     evals_params.mrr = scores[3]
     evals_params.best_score = best_score
     evals_params.save(eval_path)
+    '''
 
 
 
