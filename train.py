@@ -38,7 +38,7 @@ def main():
     tensorboard_log_dir = os.path.join(args.model_dir, 'log')
     utils.check_dir(tensorboard_log_dir)
     
-    entity2id, relation2id = data_loader.create_mappings(train_path)
+    entity2id, relation2id = data_loader.create_mappings(train_path, validation_path)
 
     # params
     params = utils.Params(params_path)
@@ -53,8 +53,6 @@ def main():
     train_generator = torch_data.DataLoader(train_set, batch_size=params.batch_size)
     validation_set = data_loader.FB15KDataset(valid_data, entity2id, relation2id)
     validation_generator = torch_data.DataLoader(validation_set, batch_size=params.validation_batch_size)
-    #test_set = data_loader.FB15KDataset(test_path, entity2id, relation2id)
-    #test_generator = torch_data.DataLoader(test_set, batch_size=params.validation_batch_size)
 
     # model
     model = net.Net(entity_count=len(entity2id), relation_count=len(relation2id), dim=params.embedding_dim,
@@ -63,7 +61,7 @@ def main():
     
     
     optimizer = optim.SGD(model.parameters(), lr=params.learning_rate)
-    #start_epoch_id, step, best_score = utils.load_checkpoint(checkpoint_dir, model, optimizer)
+    # start_epoch_id, step, best_score = utils.load_checkpoint(checkpoint_dir, model, optimizer)
     model = model.to(params.device)
 
     summary_writer = tensorboard.SummaryWriter(log_dir=tensorboard_log_dir)
@@ -71,7 +69,6 @@ def main():
 
     print("Training Dataset: entity: {} relation: {} triples: {}".format(len(entity2id), len(relation2id), len(train_set)))
     print("Validation Dataset: triples: {}".format(len(validation_set)))
-    # print("Test Dataset: triples: {}".format(len(test_set)))
     print(model)
 
     # Train
@@ -122,35 +119,15 @@ def main():
             # validation
             if epoch_id % params.validation_freq == 0:
                 model.eval()
-                _, _, hits_at_10, _ = evaluate(model=model, data_generator=validation_generator,
+                _, _, hits_at_10, mrr_score = evaluate(model=model, data_generator=validation_generator,
                                         entities_count=len(entity2id),
                                         device=params.device, summary_writer=summary_writer,
                                         epoch_id=epoch_id, metric_suffix="val")
-                logging.info('Eval: hit_10: {}'.format(hits_at_10))    
+                logging.info('Eval: hit_10: {}, mrr:{}'.format(hits_at_10, mrr_score))    
                 score = hits_at_10
                 if score > best_score:
                     best_score = score
                     utils.save_checkpoint(checkpoint_dir, model, optimizer, epoch_id, step, best_score)
-            
-    '''
-    # Testing the best checkpoint on test dataset
-    utils.load_checkpoint(checkpoint_dir, model, optimizer)
-    best_model = model.to(params.device)
-    best_model.eval()
-    scores = evaluate(model=best_model, data_generator=test_generator, entities_count=len(entity2id), device=params.device,
-                  summary_writer=summary_writer, epoch_id=1, metric_suffix="test")
-    print("Test scores: \n hit%1: {} \n hit%3: {} \nh it%10: {} \n mrr: {}".format(scores[0], scores[1], scores[2], scores[3]))
-
-    eval_path = os.path.join(args.model_dir, 'eval.json')
-    evals_params = utils.Params(eval_path)
-    evals_params.hit_1 = scores[0]
-    evals_params.hit_3 = scores[1]
-    evals_params.hit_10 = scores[2]
-    evals_params.mrr = scores[3]
-    evals_params.best_score = best_score
-    evals_params.save(eval_path)
-    '''
-
 
 
 

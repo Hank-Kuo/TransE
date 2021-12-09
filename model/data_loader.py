@@ -5,7 +5,7 @@ from typing import Dict, Tuple
 Mapping = Dict[str, int]
 
 
-def create_mappings(dataset_path: str) -> Tuple[Mapping, Mapping]:
+def create_mappings(dataset_path: str, test_path) -> Tuple[Mapping, Mapping]:
     """Creates separate mappings to indices for entities and relations."""
     # counters to have entities/relations sorted from most frequent
     entity_counter = Counter()
@@ -16,13 +16,21 @@ def create_mappings(dataset_path: str) -> Tuple[Mapping, Mapping]:
             head, relation, tail = line[:-1].split("\t")
             entity_counter.update([head, tail])
             relation_counter.update([relation])
+    with open(test_path, "r") as f:
+        for line in f:
+            # -1 to remove newline sign
+            head, relation, tail = line[:-1].split("\t")
+            entity_counter.update([head, tail])
+            relation_counter.update([relation])
+    
     entity2id = {}
     relation2id = {}
     for idx, (mid, _) in enumerate(entity_counter.most_common()):
-        entity2id[mid] = idx+1 
+        entity2id[mid] = idx+1
     for idx, (relation, _) in enumerate(relation_counter.most_common()):
         relation2id[relation] = idx+1
     return entity2id, relation2id
+
 
 def load_data(path, reverse=False):
     with open(path, "r", encoding="utf-8") as f:
