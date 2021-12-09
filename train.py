@@ -45,7 +45,7 @@ def main():
     params.device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
     utils.set_logger(os.path.join(args.model_dir, 'train.log'))
 
-    train_data = data_loader.load_data(train_path, reverse=True)
+    train_data = data_loader.load_data(train_path, reverse=False)
     valid_data = data_loader.load_data(validation_path)
 
     # dataset
