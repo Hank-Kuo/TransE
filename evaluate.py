@@ -35,32 +35,34 @@ def evaluate(model: torch.nn.Module, data_generator: torch_data.DataLoader, enti
 
     entity_ids = torch.arange(end=entities_count, device=device).unsqueeze(0)
     
-    for head, relation, tail in data_generator:
-        current_batch_size = head.size()[0]
+    with tqdm(total=len(data_generator)) as t:
+        for head, relation, tail in data_generator:
+            current_batch_size = head.size()[0]
 
-        head, relation, tail = head.to(device), relation.to(device), tail.to(device) 
-        all_entities = entity_ids.repeat(current_batch_size, 1) # 0 ~ 14951, batch x 14951
-        heads = head.reshape(-1, 1).repeat(1, all_entities.size()[1]) # batch x 14951
-        relations = relation.reshape(-1, 1).repeat(1, all_entities.size()[1])
-        tails = tail.reshape(-1, 1).repeat(1, all_entities.size()[1])
+            head, relation, tail = head.to(device), relation.to(device), tail.to(device) 
+            all_entities = entity_ids.repeat(current_batch_size, 1) # 0 ~ 14951, batch x 14951
+            heads = head.reshape(-1, 1).repeat(1, all_entities.size()[1]) # batch x 14951
+            relations = relation.reshape(-1, 1).repeat(1, all_entities.size()[1])
+            tails = tail.reshape(-1, 1).repeat(1, all_entities.size()[1])
 
-        # Check all possible tails
-        triplets = torch.stack((heads, relations, all_entities), dim=2).reshape(-1, 3) # # batch x 14951 x 3 -> 478432, 3
-        tails_predictions = model.predict(triplets).reshape(current_batch_size, -1)  # 478432(flatten) -> 32, 14951
-        # Check all possible heads
-        triplets = torch.stack((all_entities, relations, tails), dim=2).reshape(-1, 3)
-        heads_predictions = model.predict(triplets).reshape(current_batch_size, -1)
+            # Check all possible tails
+            triplets = torch.stack((heads, relations, all_entities), dim=2).reshape(-1, 3) # # batch x 14951 x 3 -> 478432, 3
+            tails_predictions = model.predict(triplets).reshape(current_batch_size, -1)  # 478432(flatten) -> 32, 14951
+            # Check all possible heads
+            triplets = torch.stack((all_entities, relations, tails), dim=2).reshape(-1, 3)
+            heads_predictions = model.predict(triplets).reshape(current_batch_size, -1)
 
-        # Concat predictions
-        predictions = torch.cat((tails_predictions, heads_predictions), dim=0)
-        ground_truth_entity_id = torch.cat((tail.reshape(-1, 1), head.reshape(-1, 1)))
+            # Concat predictions
+            predictions = torch.cat((tails_predictions, heads_predictions), dim=0)
+            ground_truth_entity_id = torch.cat((tail.reshape(-1, 1), head.reshape(-1, 1)))
 
-        hits_at_1 += net.metrics['hit_at_k'](predictions, ground_truth_entity_id, device=device, k=1)
-        hits_at_3 += net.metrics['hit_at_k'](predictions, ground_truth_entity_id, device=device, k=3)
-        hits_at_10 += net.metrics['hit_at_k'](predictions, ground_truth_entity_id, device=device, k=10)
-        mrr += net.metrics['mrr'](predictions, ground_truth_entity_id)
-        
-        examples_count += predictions.size()[0] # dataset.size * 2 
+            hits_at_1 += net.metrics['hit_at_k'](predictions, ground_truth_entity_id, device=device, k=1)
+            hits_at_3 += net.metrics['hit_at_k'](predictions, ground_truth_entity_id, device=device, k=3)
+            hits_at_10 += net.metrics['hit_at_k'](predictions, ground_truth_entity_id, device=device, k=10)
+            mrr += net.metrics['mrr'](predictions, ground_truth_entity_id)
+            
+            examples_count += predictions.size()[0] # dataset.size * 2 
+            t.update()
 
     hits_at_1_score = hits_at_1 / examples_count * 100
     hits_at_3_score = hits_at_3 / examples_count * 100

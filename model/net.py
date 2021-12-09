@@ -19,7 +19,7 @@ class Net(nn.Module):
     def _init_enitity_emb(self):
         entities_emb = nn.Embedding(num_embeddings=self.entity_count + 1,
                                     embedding_dim=self.dim,
-                                    padding_idx=self.entity_count)
+                                    padding_idx=0)
         uniform_range = 6 / np.sqrt(self.dim)
         entities_emb.weight.data.uniform_(-uniform_range, uniform_range)
         return entities_emb
@@ -27,7 +27,7 @@ class Net(nn.Module):
     def _init_relation_emb(self):
         relations_emb = nn.Embedding(num_embeddings=self.relation_count + 1,
                                      embedding_dim=self.dim,
-                                     padding_idx=self.relation_count)
+                                     padding_idx=0)
         uniform_range = 6 / np.sqrt(self.dim)
         relations_emb.weight.data.uniform_(-uniform_range, uniform_range)
         # -1 to avoid nan for OOV vector

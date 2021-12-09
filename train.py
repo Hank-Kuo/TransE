@@ -1,6 +1,7 @@
 import os
 import argparse
 from tqdm import tqdm
+import logging
 
 import model.net as net
 import model.data_loader as data_loader
@@ -42,25 +43,31 @@ def main():
     # params
     params = utils.Params(params_path)
     params.device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
+    utils.set_logger(os.path.join(args.model_dir, 'train.log'))
+
+    train_data = data_loader.load_data(train_path, reverse=True)
+    valid_data = data_loader.load_data(validation_path)
 
     # dataset
-    train_set = data_loader.FB15KDataset(train_path, entity2id, relation2id)
+    train_set = data_loader.FB15KDataset(train_data, entity2id, relation2id)
     train_generator = torch_data.DataLoader(train_set, batch_size=params.batch_size)
-    validation_set = data_loader.FB15KDataset(validation_path, entity2id, relation2id)
+    validation_set = data_loader.FB15KDataset(valid_data, entity2id, relation2id)
     validation_generator = torch_data.DataLoader(validation_set, batch_size=params.validation_batch_size)
-    test_set = data_loader.FB15KDataset(test_path, entity2id, relation2id)
-    test_generator = torch_data.DataLoader(test_set, batch_size=params.validation_batch_size)
+    #test_set = data_loader.FB15KDataset(test_path, entity2id, relation2id)
+    #test_generator = torch_data.DataLoader(test_set, batch_size=params.validation_batch_size)
 
     # model
     model = net.Net(entity_count=len(entity2id), relation_count=len(relation2id), dim=params.embedding_dim,
                                     margin=params.margin,
                                     device=params.device, norm=params.norm)  # type: torch.nn.Module
-    model = model.to(params.device)
+    
+    
     optimizer = optim.SGD(model.parameters(), lr=params.learning_rate)
+    #start_epoch_id, step, best_score = utils.load_checkpoint(checkpoint_dir, model, optimizer)
+    model = model.to(params.device)
+
     summary_writer = tensorboard.SummaryWriter(log_dir=tensorboard_log_dir)
-    start_epoch_id = 1
-    step = 0
-    best_score = 0.0
+    start_epoch_id, step, best_score = 1, 0, 0.0
 
     print("Training Dataset: entity: {} relation: {} triples: {}".format(len(entity2id), len(relation2id), len(train_set)))
     print("Validation Dataset: triples: {}".format(len(validation_set)))
@@ -119,6 +126,7 @@ def main():
                                         entities_count=len(entity2id),
                                         device=params.device, summary_writer=summary_writer,
                                         epoch_id=epoch_id, metric_suffix="val")
+                logging.info('Eval: hit_10: {}'.format(hits_at_10))    
                 score = hits_at_10
                 if score > best_score:
                     best_score = score

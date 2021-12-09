@@ -19,21 +19,26 @@ def create_mappings(dataset_path: str) -> Tuple[Mapping, Mapping]:
     entity2id = {}
     relation2id = {}
     for idx, (mid, _) in enumerate(entity_counter.most_common()):
-        entity2id[mid] = idx
+        entity2id[mid] = idx+1 
     for idx, (relation, _) in enumerate(relation_counter.most_common()):
-        relation2id[relation] = idx
+        relation2id[relation] = idx+1
     return entity2id, relation2id
+
+def load_data(path, reverse=False):
+    with open(path, "r", encoding="utf-8") as f:
+        data = [line[:-1].split("\t") for line in f]
+        if reverse:
+            data += [[i[2], i[1], i[0]] for i in data]
+    return data
 
 
 class FB15KDataset(data.Dataset):
     """Dataset implementation for handling FB15K and FB15K-237."""
 
-    def __init__(self, data_path: str, entity2id: Mapping, relation2id: Mapping):
+    def __init__(self, data, entity2id: Mapping, relation2id: Mapping):
         self.entity2id = entity2id
         self.relation2id = relation2id
-        with open(data_path, "r") as f:
-            # data in tuples (head, relation, tail)
-            self.data = [line[:-1].split("\t") for line in f]
+        self.data= data
 
     def __len__(self):
         """Denotes the total number of samples."""
@@ -52,4 +57,4 @@ class FB15KDataset(data.Dataset):
         try:
             return mapping[key]
         except KeyError:
-            return len(mapping)
+            return 0
